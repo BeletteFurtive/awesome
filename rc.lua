@@ -1,27 +1,27 @@
 -- Standard awesome library
-local gears     = require("gears")
-local awful     = require("awful")
-awful.rules     = require("awful.rules")
+local gears = require("gears")
+local awful = require("awful")
+awful.rules = require("awful.rules")
 require("awful.autofocus")
 -- Widget and layout library
-local wibox     = require("wibox")
+local wibox = require("wibox")
 -- Theme handling library
 local beautiful = require("beautiful")
 -- Notification library
-local naughty   = require("naughty")
-vicious         = require("vicious")
-local menubar   = require("menubar")
+local naughty = require("naughty")
+local menubar = require("menubar")
 
-local gnome_app = {"nautilus", "evince", "music", "lollypop", "totem", "gedit", "geary", "gnome-boxes"}
+-- Load Debian menu entries
+require("debian.menu")
 
-local minitray  = require("minitray")
+
 
 require("volume")
 require("brightness")
 require("battery")
 
--- Load Debian menu entries
-require("debian.menu")
+os.setlocale("fr_FR.UTF-8") -- Français
+
 
 -- {{{ Error handling
 -- Check if awesome encountered an error during startup and fell back to
@@ -50,11 +50,11 @@ end
 
 -- {{{ Variable definitions
 -- Themes define colours, icons, font and wallpapers.
-beautiful.init("~/.config/awesome/themes/gray/theme.lua")
+beautiful.init("~/.config/awesome/themes/obscur/theme.lua")
 
 -- This is used later as the default terminal and editor to run.
-terminal = "x-terminal-emulator"
-editor = os.getenv("EDITOR") or "editor"
+terminal = "urxvt"
+editor = os.getenv("EDITOR ") or "editor"
 editor_cmd = terminal .. " -e " .. editor
 
 -- Default modkey.
@@ -112,7 +112,8 @@ myawesomemenu = {
 mymainmenu = awful.menu({ items = { { "awesome", myawesomemenu, beautiful.awesome_icon },
                                     { "Debian", debian.menu.Debian_menu.Debian },
                                     { "open terminal", terminal },
-                                    { "lock screen", "slock"}
+                                    { "lock screen", "slock"},
+                                    { "shutdown", "gksudo shutdown"}
                                   }
                         })
 
@@ -124,19 +125,16 @@ menubar.utils.terminal = terminal -- Set the terminal for applications that requ
 -- }}}
 
 -- {{{ Wibox
--- Create a textclock widget
---mytextclock = awful.widget.textclock()
+
 
 
 -- Space
 space = wibox.widget.textbox()
-space:set_text('   ')
+space:set_text('  |  ')
 
 
 --clock
-os.setlocale("fr_FR.UTF-8") -- Français
-mytextclock = awful.widget.textclock("%a %d %b  %H:%M", 60)
-
+mytextclock = awful.widget.textclock("%a %d %b  %H:%M ", 1)
 
 -- Create a wibox for each screen and add it
 mywibox = {}
@@ -199,14 +197,13 @@ for s = 1, screen.count() do
                            awful.button({ }, 3, function () awful.layout.inc(layouts, -1) end),
                            awful.button({ }, 4, function () awful.layout.inc(layouts, 1) end),
                            awful.button({ }, 5, function () awful.layout.inc(layouts, -1) end)))
+    
     -- Create a taglist widget
     mytaglist[s] = awful.widget.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
 
     -- Create a tasklist widget
-    --mytasklist[s] = awful.widget.tasklist(s, awful.widget.tasklist.filter.currenttags, mytasklist.buttons)
+    mytasklist[s] = awful.widget.tasklist(s, awful.widget.tasklist.filter.currenttags, mytasklist.buttons)
 
-
-    
     -- Create the wibox
     mywibox[s] = awful.wibox({ position = "top", screen = s })
 
@@ -218,28 +215,23 @@ for s = 1, screen.count() do
 
     -- Widgets that are aligned to the right
     local right_layout = wibox.layout.fixed.horizontal()
-    
-    --if s == 1 then left_layout:add(wibox.widget.systray()) end
+    if s == 1 then right_layout:add(wibox.widget.systray())end
+    right_layout:add(space)
     right_layout:add(brightnesswidget)
     right_layout:add(brightnessimage)
     right_layout:add(volumewidget)
     right_layout:add(volumeimage)
     right_layout:add(batterywidget)
     right_layout:add(batteryimage)
+    right_layout:add(space)
+    right_layout:add(mytextclock)
+    
     right_layout:add(mylayoutbox[s])
 
-    local middle_layout = wibox.layout.fixed.horizontal()
-    middle_layout:add(space)
-    middle_layout:add(space)
-    middle_layout:add(mytextclock)
-    middle_layout:add(space)
-    middle_layout:add(space)
-    
     -- Now bring it all together (with the tasklist in the middle)
     local layout = wibox.layout.align.horizontal()
-    layout:set_left(left_layout) 
-    --layout:set_middle(mytasklist[s])
-    layout:set_middle(middle_layout)
+    layout:set_left(left_layout)
+    layout:set_middle(mytasklist[s])
     layout:set_right(right_layout)
 
     mywibox[s]:set_widget(layout)
@@ -281,53 +273,43 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey,           }, "Tab",
         function ()
             awful.client.focus.history.previous()
-            if client.focus then                client.focus:raise()
+            if client.focus then
+                client.focus:raise()
             end
         end),
 
+
+    
     --raccourcis
     awful.key({ modkey, "Shift"   }, "i",     function() awful.util.spawn("iceweasel")  end),
     awful.key({ modkey, "Shift"   }, "e",     function() awful.util.spawn("emacs")  end),
     awful.key({ modkey, "Shift"   }, "n",     function() awful.util.spawn("nautilus")  end),
 
 
-    awful.key({ modkey, "Shift" }, "m", function() minitray.toggle() end ),
-
+    
     --son
-    awful.key({  }, "XF86AudioRaiseVolume", function() awful.util.spawn("pactl set-sink-volume 0 +10%") notification=naughty.notify({
-                title= "Volume : ",
-                text=update_volume(volumewidget, notification)})
-    end),
+    awful.key({  }, "XF86AudioRaiseVolume", function() awful.util.spawn("pactl set-sink-volume 0 +10%") end),
     
-    awful.key({  }, "XF86AudioLowerVolume", function() awful.util.spawn("pactl set-sink-volume 0 -- -10%") notification=naughty.notify({
-                title= "Volume : ",
-                text=update_volume(volumewidget, notification)})
-    end),
+    awful.key({  }, "XF86AudioLowerVolume", function() awful.util.spawn("pactl set-sink-volume 0 -- -10%") end),
     
-    awful.key({  }, "XF86AudioMute", function() awful.util.spawn("pactl set-sink-mute 0 toggle") end),
+    awful.key({  }, "XF86AudioMute", function() awful.util.spawn("pactl set-sink-mute 0 toggle")  update_volume(volumewidget, "mute") end),
 
     --brightness
-    awful.key({  }, "XF86MonBrightnessUp", function() awful.util.spawn("xbacklight -inc 10") notification=naughty.notify({
-                title= "Luminosité : ",
-                text=update_brightness(brightnesswidget, notification)})
-    end),
+    awful.key({  }, "XF86MonBrightnessUp", function() awful.util.spawn("xbacklight -inc 10") end),
     
-    awful.key({  }, "XF86MonBrightnessDown", function() awful.util.spawn("xbacklight -dec 10") notification=naughty.notify({
-                title= "Luminosité : ",
-                text=update_brightness(brightnesswidget, notification)})
-    end),
+    awful.key({  }, "XF86MonBrightnessDown", function() awful.util.spawn("xbacklight -dec 10") end),
 
+
+    
     --output screen
     awful.key({modkey, }, "$", function() awful.util.spawn("xrandr --output VGA1 --auto --left-of LVDS1 --noprimary") end),
-    awful.key({modkey, }, "⁼", function() awful.util.spawn("xrandr --output VGA1 --off") end),
-
+  
     --lock
     awful.key({ modkey }, "F12", function () awful.util.spawn("slock") end),
-   
 
     
-    -- Standard program    
-    awful.key({ modkey,           }, "Return", function () awful.util.spawn(terminal)   end),
+    -- Standard program
+    awful.key({ modkey,           }, "Return", function () awful.util.spawn(terminal) end),
     awful.key({ modkey, "Control" }, "r", awesome.restart),
     awful.key({ modkey, "Shift"   }, "q", awesome.quit),
 
@@ -340,7 +322,6 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey,           }, "space", function () awful.layout.inc(layouts,  1) end),
     awful.key({ modkey, "Shift"   }, "space", function () awful.layout.inc(layouts, -1) end),
 
-    
     awful.key({ modkey, "Control" }, "n", awful.client.restore),
 
     -- Prompt
@@ -376,9 +357,6 @@ clientkeys = awful.util.table.join(
             c.maximized_vertical   = not c.maximized_vertical
         end)
 )
-
-
-
 
 -- Bind all key numbers to tags.
 -- Be careful: we use keycodes to make it works on any keyboard layout.
@@ -480,21 +458,9 @@ client.connect_signal("manage", function (c, startup)
         end
     end
 
-
-    -- cherche si l'application est une application gnome 3 dans la liste (pas trouvé mieux pour le moment)
-    local titlebars_enabled = true
-    if titlebars_enabled then
-       for _,instance_of in pairs(gnome_app) do
-          if instance_of == c.instance then
-             
-             titlebars_enabled = false
-          end
-       end
-    end
-
+    local titlebars_enabled = false
     if titlebars_enabled and (c.type == "normal" or c.type == "dialog") then
-       -- buttons for the titlebar
-       
+        -- buttons for the titlebar
         local buttons = awful.util.table.join(
                 awful.button({ }, 1, function()
                     client.focus = c
@@ -515,11 +481,11 @@ client.connect_signal("manage", function (c, startup)
 
         -- Widgets that are aligned to the right
         local right_layout = wibox.layout.fixed.horizontal()
-        --right_layout:add(awful.titlebar.widget.floatingbutton(c))
-        --right_layout:add(awful.titlebar.widget.maximizedbutton(c))
-        --right_layout:add(awful.titlebar.widget.stickybutton(c))
-        --right_layout:add(awful.titlebar.widget.ontopbutton(c))
-        --right_layout:add(awful.titlebar.widget.closebutton(c))
+        right_layout:add(awful.titlebar.widget.floatingbutton(c))
+        right_layout:add(awful.titlebar.widget.maximizedbutton(c))
+        right_layout:add(awful.titlebar.widget.stickybutton(c))
+        right_layout:add(awful.titlebar.widget.ontopbutton(c))
+        right_layout:add(awful.titlebar.widget.closebutton(c))
 
         -- The title goes in the middle
         local middle_layout = wibox.layout.flex.horizontal()
@@ -543,4 +509,6 @@ client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_n
 -- }}}
 
 
-awful.util.spawn("/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &")
+
+-- permet d'utiliser gnome-keyring, gksudo...etc
+--awful.util.spawn("/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &")
