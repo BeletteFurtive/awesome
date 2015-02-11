@@ -11,7 +11,7 @@ function update_brightness(widget, notification)
    naughty.destroy(notification)
    local brightness = io.popen("xbacklight")
    local brightnessstatus = brightness:read("*all")
-   local brightnessnumber
+FwWWW   local brightnessnumber
    local indic = ""
 
    brightness:close()
@@ -25,8 +25,8 @@ function update_brightness(widget, notification)
 end
 
 
---update_brightness(brightnesswidget)
+update_brightness(brightnesswidget)
 
---mytimer = timer({ timeout = 1 })
---mytimer:connect_signal("timeout", function () update_brightness(brightnesswidget) end)
---mytimer:start()
+mytimer = timer({ timeout = 1 })
+mytimer:connect_signal("timeout", function () update_brightness(brightnesswidget) end)
+mytimer:start()

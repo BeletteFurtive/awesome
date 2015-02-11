@@ -10,13 +10,11 @@ local beautiful = require("beautiful")
 -- Notification library
 local naughty = require("naughty")
 local menubar = require("menubar")
-require("test")
 
-require("revelation")
+-- Load Debian menu entries
+require("debian.menu")
 
-require("touchpad")
 
-local redshift = require("redshift")
 
 require("volume")
 require("brightness")
@@ -25,22 +23,9 @@ require("battery")
 os.setlocale("fr_FR.UTF-8") -- Français
 
 
-
--- unagi gere la transparence
-awful.util.spawn_with_shell("compton --config /home/belette/.config/compton.conf")
-
-awful.util.spawn_with_shell("/usr/lib/gnome-settings-daemon/gnome-settings-daemon")
-
-
-awful.util.spawn("xinput --set-prop 16 'Synaptics Two-Finger Scrolling' 1 1")
-
-
-
 -- {{{ Error handling
 -- Check if awesome encountered an error during startup and fell back to
 -- another config (This code will only ever execute for the fallback config)
-
-
 if awesome.startup_errors then
     naughty.notify({ preset = naughty.config.presets.critical,
                      title = "Oops, there were errors during startup!",
@@ -50,7 +35,7 @@ end
 -- Handle runtime errors after startup
 do
     local in_error = false
-    awesome.connect_signal("debug::error", function (err)
+XX    awesome.connect_signal("debug::error", function (err)
         -- Make sure we don't go into an endless error loop
         if in_error then return end
         in_error = true
@@ -65,22 +50,12 @@ end
 
 -- {{{ Variable definitions
 -- Themes define colours, icons, font and wallpapers.
-beautiful.init("~/.config/awesome/themes/themePerso/theme.lua")
+beautiful.init("~/.config/awesome/themes/obscur/theme.lua")
 
 -- This is used later as the default terminal and editor to run.
 terminal = "urxvt"
 editor = os.getenv("EDITOR ") or "editor"
 editor_cmd = terminal .. " -e " .. editor
-
-
-
--- set binary path (optional)
-redshift.redshift = "/usr/bin/redshift"
--- set additional redshift arguments (optional)
-redshift.options = "-l 48.6932:6.18279"
-
--- 1 for dim, 0 for not dimmed
-redshift.init(1)
 
 -- Default modkey.
 -- Usually, Mod4 is the key with a logo between Control and Alt.
@@ -135,6 +110,7 @@ myawesomemenu = {
 }
 
 mymainmenu = awful.menu({ items = { { "awesome", myawesomemenu, beautiful.awesome_icon },
+                                    { "Debian", debian.menu.Debian_menu.Debian },
                                     { "open terminal", terminal },
                                     { "lock screen", "slock"},
                                     { "shutdown", "gksudo shutdown"}
@@ -276,8 +252,6 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey,           }, "Right",  awful.tag.viewnext       ),
     awful.key({ modkey,           }, "Escape", awful.tag.history.restore),
 
-    --awful.key({modkey}, "e", revelation),
-
     awful.key({ modkey,           }, "j",
         function ()
             awful.client.focus.byidx( 1)
@@ -307,41 +281,25 @@ globalkeys = awful.util.table.join(
 
     
     --raccourcis
-    awful.key({ modkey, "Shift"   }, "f",     function() awful.util.spawn("firefox")  end),
+    awful.key({ modkey, "Shift"   }, "i",     function() awful.util.spawn("iceweasel")  end),
     awful.key({ modkey, "Shift"   }, "e",     function() awful.util.spawn("emacs")  end),
     awful.key({ modkey, "Shift"   }, "n",     function() awful.util.spawn("nautilus")  end),
 
-    awful.key({modkey}, "s", redshift.toggle),
 
     
-    awful.key({ }, "Print", function () awful.util.spawn("scrot -e 'mv $f ~/screenshots/ 2>/dev/null'") end),
     --son
-    awful.key({  }, "XF86AudioRaiseVolume", function() awful.util.spawn("pactl set-sink-volume  alsa_output.pci-0000_00_1b.0.analog-stereo +10%")  update_volume(volumewidget, false) end),
+    awful.key({  }, "XF86AudioRaiseVolume", function() awful.util.spawn("pactl set-sink-volume 0 +10%") end),
     
-    awful.key({  }, "XF86AudioLowerVolume", function() awful.util.spawn("pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo -- -10%")  update_volume(volumewidget, false) end),
+    awful.key({  }, "XF86AudioLowerVolume", function() awful.util.spawn("pactl set-sink-volume 0 -- -10%") end),
     
-    awful.key({  }, "XF86AudioMute", function() awful.util.spawn("pactl set-sink-mute alsa_output.pci-0000_00_1b.0.analog-stereo toggle")  update_volume(volumewidget, true) end),
+    awful.key({  }, "XF86AudioMute", function() awful.util.spawn("pactl set-sink-mute 0 toggle")  update_volume(volumewidget, "mute") end),
 
     --brightness
     awful.key({  }, "XF86MonBrightnessUp", function() awful.util.spawn("xbacklight -inc 10") end),
     
     awful.key({  }, "XF86MonBrightnessDown", function() awful.util.spawn("xbacklight -dec 10") end),
 
-    awful.key({  }, "XF86TouchpadToggle", function() toggle_touchpad() end),
 
-	
-	awful.key({}, "XF86Calculator", function () awful.util.spawn("gnome-calculator") end),
-	awful.key({}, "XF86AudioPlay", function () awful.util.spawn("rhythmbox-client --play-pause", false) end),
-	awful.key({}, "XF86AudioPrev", function () awful.util.spawn("rhythmbox-client --previous") end),
-	awful.key({}, "XF86AudioNext", function () awful.util.spawn("rhythmbox-client --next") end),
-	awful.key({}, "XF86AudioStop", function () awful.util.spawn("rhythmbox-client --pause") end),
-	
-    awful.key({modkey}, "e", function() naughty.notify({
-				title="Je propose :",
-				text="Qu'on l'encule !",
-				icon=awful.util.getdir("config") .. "/images/propose.jpg",
-
-				timeout = 2})  end),
     
     --output screen
     awful.key({modkey, }, "$", function() awful.util.spawn("xrandr --output VGA1 --auto --left-of LVDS1 --noprimary") end),
@@ -379,10 +337,6 @@ globalkeys = awful.util.table.join(
     -- Menubar
     awful.key({ modkey }, "d", function() menubar.show() end)
 )
-
-
-
-
 
 clientkeys = awful.util.table.join(
     awful.key({ modkey,           }, "f",      function (c) c.fullscreen = not c.fullscreen  end),
@@ -556,19 +510,5 @@ client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_n
 
 
 
-
-
-update_battery(batterywidget)
-
-update_brightness(brightnesswidget)
-
-update_volume(volumewidget)
- 
-
-mytimer = timer({ timeout = 1 })
-mytimer:connect_signal("timeout", function () update_brightness(brightnesswidget) end)
-mytimer:connect_signal("timeout", function() update_battery(batterywidget) end)
-mytimer:connect_signal("timeout", function () update_volume(volumewidget) end)
-
-
-mytimer:start()
+-- permet d'utiliser gnome-keyring, gksudo...etc
+--awful.util.spawn("/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &")

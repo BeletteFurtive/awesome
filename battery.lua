@@ -13,7 +13,7 @@ function update_battery(widget)
    local capacitystring
    local capacitystatus
    
-   capacitystatus = capacity:read()
+   capacitystatus = "  " .. capacity:read()
    chargestatus = charge:read()
    
    capacity:close()
@@ -50,9 +50,9 @@ function update_battery(widget)
    
 end
 
-update_battery(batterywidget)
+--update_battery(batterywidget)
 
-mytimer = timer({timeout = 20})
-mytimer:connect_signal("timeout", function() update_battery(batterywidget) end)
-mytimer:start()
+--mytimer = timer({timeout = 20})
+--mytimer:connect_signal("timeout", function() update_battery(batterywidget) end)
+--mytimer:start()
 
