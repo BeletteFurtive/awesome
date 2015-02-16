@@ -4,7 +4,6 @@ local naughty   = require("naughty")
 
 
 local toggled = true;
-
 function toggle_touchpad()
 
    toggled = not(toggled);
